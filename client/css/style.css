@@ -1,0 +1,39 @@
+#banner-img{
+  height: 160px;
+  width: 160px;
+}
+#headline{
+  background: #3ba2db;
+}
+
+.roster-box{
+  height: 100%;
+}
+.thumbnail-photo{
+  height: 40px;
+  width: 40px;
+  border-radius: 20px;
+  -webkit-border-radius: 20px;
+  -moz-border-radius: 20px;
+  box-shadow: 5px 1px 6px gray;
+  -webkit-box-shadow: 5px 1px 6px gray;
+  -moz-box-shadow: 5px 1px 6px gray;
+}
+
+.name-tag{
+  font-size: 1.25em;
+}
+.headline-text{
+  text-shadow: 3px 0px 3px rgba(0,0,0, 0.7);
+  color: rgb(240, 240, 240);
+  font-family: Helvetica;
+}
+
+#banner-headline{
+  font-size: 3em;
+  letter-spacing: 2px;
+}
+#banner-meeting{
+  font-size: 1.5em;
+  letter-spacing: 1px;
+}
