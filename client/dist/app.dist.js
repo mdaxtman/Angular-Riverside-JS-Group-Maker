@@ -258,6 +258,7 @@
   }]);
 
 })();
+
 (function(){
 
   angular.module('meetup.config', [])
