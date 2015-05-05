@@ -1,297 +1,323 @@
-var sizeSelect = d.getElementById('group-size'),
-  numberOfGroupsSelect = d.getElementById('group-quantity');
+(function(){
+  angular.module('groupMaker.config', [])
 
-sizeSelect.addEventListener('change', function(){
-  if(mvc.model.get('rosterModel').data.length > 0){
-    var numberOfGroups = Math.ceil(attending.length / this.value);
-    groupMaker.groupModelConstructor(numberOfGroups);
-    groupMaker.assignGroups(attending, this.value, null);
-  }
-    numberOfGroupsSelect.value = '';
-});
-
-numberOfGroupsSelect.addEventListener('change', function(){
-  if(mvc.model.get('rosterModel').data.length > 0){
-    groupMaker.groupModelConstructor(this.value);
-    groupMaker.assignGroups(attending, null, this.value);
-  }
-    sizeSelect.value = '';
-});
-
-document.getElementById('name-button').addEventListener('click', function(){
-  Array.prototype.sort.call(mvc.model.get('rosterModel').data, groupMaker.sortByName);
-  groupMaker.updateRosterModel(); 
-});
-
-document.getElementById('experience-button').addEventListener('click', function(){
-  console.log(mvc.model.get('rosterModel'));
-  Array.prototype.sort.call(mvc.model.get('rosterModel').data, groupMaker.sortBySkill);
-  groupMaker.updateRosterModel();
-});
-
-document.getElementById('create').addEventListener('click', groupMaker.createGroupsOnClick);
-
-
-var apiCallCount = 0, RSVPList = {}, memberList, attending,
-    d = document, groupList = {};  
-
-var apis = (function(){
-  return {
-
-    config : function(){
-      apiCallCount++;
-      if(apiCallCount >= 4){
-      //filter the memberList and create new array with rsvp members
-      //this is necessary because the RSVP list doesn't have the skill list
-        attending = memberList.filter(function(obj){
-          return RSVPList[obj.member_id] !== undefined;
-        });
-        attending.sort(this.sortBySkill);
-
-        //create model reference in framework
-        this.initializeApplication(attending);
-      }
-    },
-
-    //jsonp callbacks
-    groupData : function(results){
-      //adds group image to banner and adds the name of the group
-      var bannerImg, bannerHeadline;
-      bannerImg = d.getElementById('banner-img');
-      bannerImg.setAttribute('src', results.data.group_photo.highres_link);
-      
-      bannerHeadline = d.getElementById('banner-headline');
-      bannerHeadline.innerText = results.data.name;
-      this.config();  
-    },
-
-    eventData : function(data){
-      var bannerMeeting, script, ID, source, prevEventScript = d.getElementById('previous-events');
-
-      if(data.results && data.results.length > 0){
-        //adds event title
-        bannerMeeting = d.getElementById('banner-meeting');
-        bannerMeeting.innerText = data.results[0].name;
-        
-        //picks up event id for upcoming event and adds another script tag to obtain rsvps for that event
-        ID = data.results[0].id;
-        source = 'https://api.meetup.com/2/rsvps/?format=json&key=53e53186ab3be513c6e1a2d6b1e79&event_id='+ ID + '&sign=true&callback=groupMaker.rsvpData';
-        
-        script = d.createElement('script');
-        script.setAttribute('src', source);
-        d.body.appendChild(script);
-        this.config();
-      }else if(!prevEventScript){
-        prevEventScript = d.createElement('script');
-        prevEventScript.setAttribute('src', "https://api.meetup.com/2/events/?format=json&key=53e53186ab3be513c6e1a2d6b1e79&sign=true&group_urlname=RiversideJS&status=past&desc=true&callback=groupMaker.eventData");
-        prevEventScript.setAttribute('id', 'previous-events');
-        d.body.appendChild(prevEventScript);
-      }
-    },
-
-    memberData : function(data){
-      //retreives the full list of 200 most recently visiting members to the page
-      memberList = data.results;
-      this.config();
-    },
-
-    rsvpData : function(data){
-      //retreives all rsvps for a particular event
-      data.results.forEach(function(obj){
-        RSVPList[obj.member.member_id] = obj.member.name; 
-      });
-      this.config();
-    }
-  };
-
-
-
+    .config(['$urlRouterProvider', function($urlRouterProvider){
+      $urlRouterProvider.otherwise('/meetup');
+    }]);
+})();
+(function(){
+  angular.module('groupMakerApp', [
+    'ui.router',
+    'groupMaker.config',
+    'meetup.config',
+    'meetup.controller',
+    'meetup.factory',
+    'eventsList.factory',
+    'event.config',
+    'event.controller',
+    'rsvp.factory',
+    'disable.directive'
+    ]);
 })();
 
-var groupMaker = (function (){
-  
-    var obj = {
-      initializeApplication: function(){
-        mvc.model.construct('rosterModel', attending);
-        mvc.view.construct('groupsView', 
-          '<div class="col-md-3">'+
-            '<div class="panel panel-default">'+        
-              '<div class="panel-heading">'+          
-                '<div class="panel-title" mvc-render="\'Group \' + value.groupNumber">'+
-                '</div>'+
-              '</div>'+
-              '<div class="panel-body">'+
-                '<mvc-component mvc-attr="which=\'group-\' + value.groupNumber"></mvc-component>'+
-              '</div>'+
-            '</div>'+
-          '</div>'
-          );
-        mvc.view.construct('rosterView', 
-        '<li class="list-group-item names" mvc-attr="title=value.bio || \'I did not bother writing a bio\'">'+ 
-          '<p class="text-center">'+
-            '<img class="thumbnail-photo pull-left" mvc-attr="src=value.photo.thumb_link">'+
-            '<a mvc-attr="href=value.profile_url" target="_blank" mvc-render="value.name" class="name-tag">'+
-            '</a>'+ 
-            '<span mvc-render="parseInt(value.answers[0].answer) || 0" class="badge pull-right alert-info">'+
-            '</span>'+
-          '</p>'+
-        '</li>'
-        );
-        mvc.update({
-          model: 'rosterModel',
-          toView: 'rosterView',
-          component: 'roster'
-        });
+(function(){
+  angular.module('disable.directive', [])
+
+    .directive('disableMember', function(){
+      return {
+        restrict: 'A',
+        scope: {
+          assign : '=',
+          profile: '='
+        },
+        link: function(scope, elem){
+          elem.bind('dblclick', function(e){
+            if(scope.profile.groupNumber === 'disabled'){
+              scope.profile.groupNumber = 0;
+              scope.assign(true);
+            }else{
+              scope.profile.groupNumber = 'disabled';
+            }
+            elem.toggleClass('disabled');
+          });
+        }
+      };
+    });
+})();
+
+(function(){
+
+  angular.module('event.config', [])
+
+  .config(['$stateProvider', function($stateProvider){
+    $stateProvider.state('meetup.event', {
+      url:'/:eventId',
+      controller: 'eventCtrl',
+      templateUrl: '../scripts/meetup/event/event.html',
+      resolve:{
+        rsvpList : ['rsvpFactory', '$stateParams', function(rsvpFactory, $stateParams){
+          return rsvpFactory.getRsvps($stateParams.eventId);
+        }]
+      }
+    });
+  }]);
+})();
+(function(){
+  angular.module('event.controller', [])
+
+  .controller('eventCtrl', ['$scope', 'rsvpList', function($scope, rsvpList){
+    $scope.roster = rsvpList;
+    $scope.groups = {};
+    $scope.groupSize = '';
+    $scope.numberOfGroups = '';
+    $scope.button = 'Create Groups';
+
+    $scope.sortByName = function(){
+      $scope.roster.sort(sortByName);
+    };
+
+    $scope.sortBySkill = function(){
+      $scope.roster.sort(sortBySkill);
+    };
+
+    $scope.resetSelect = function(arg){
+      if(arg === 'size'){
+        $scope.numberOfGroups = '';
+      }else{
+        $scope.groupSize = '';
       }
     };
-  var args = Array.prototype.slice.call(arguments);
-  while(args.length > 0){
-    var a = args.shift();
-    for (var prop in a){
-      obj[prop] = a[prop];
+
+    $scope.assignGroups = function(assignOnlyDisabled){
+
+      if($scope.button === 'Create Groups'){
+        if($scope.groupSize !== '' || $scope){ 
+          assignGroups($scope);
+          createGroups($scope);
+          $scope.button = 'Reset';
+        }else{
+          alert('please select a group size or number of Groups');
+        }
+      }else if(!assignOnlyDisabled){
+        console.log('blah');
+        $scope.button = 'Create Groups';
+        var resetRoster = [];
+        for(var prop in $scope.groups){
+          resetRoster = resetRoster.concat($scope.groups[prop]);
+        }
+        $scope.roster = resetRoster.concat($scope.roster);
+        $scope.groups = {};
+        $scope.sortBySkill();
+      }
+    };
+
+    $scope.sortBySkill();
+  }]);
+
+
+  function sortByName(a, b){
+    if(a.name < b.name){
+      return -1;
+    }else if(a.name > b.name){
+      return 1;
+    }else{
+      return 0;
     }
   }
-  return obj;
-})(apis, helperFunctions);
 
-var helperFunctions = (function(){
+  function sortBySkill(a, b){
+    var left = parseInt(a.answers[0].answer); 
+    var right = parseInt(b.answers[0].answer);
+    if(isNaN(left)){
+      left = 0;
+    }
+    if(isNaN(right)){
+      right = 0;
+    }
+    if(right - left !== 0){
+      return right - left;
+    }else{
+      return sortByName(a, b);
+    }
+  }
 
-  return {
+  function assignGroups(scope, num){
+    var i, j, currentNumber, workFromFront,
+      len = scope.roster.length,
+      groupSize,
+      numberOfGroups = num || parseInt(scope.numberOfGroups);
+      
+    if(!num){
+      groupSize = parseInt(scope.groupSize);
+    }
 
-    sortBySkill : function(a, b){
-      var left = parseInt(a.answers[0].answer); 
-      var right = parseInt(b.answers[0].answer);
-      if(isNaN(left)){
-        left = 0;
-      }
-      if(isNaN(right)){
-        right = 0;
-      }
-      if(right - left !== 0){
-        return right - left;
-      }else{
-        return helperFunctions.sortByName(a, b);
-      }
-    },
-
-    sortByName : function(a, b){
-      if(a.name < b.name){
-        return -1;
-      }else if(a.name > b.name){
-        return 1;
-      }else{
-        return 0;
-      }
-    },
-    
-    groupModelConstructor : function(num){
-      var model = [];
-      for(var i = 1; i <= num; i++){
-        var obj = {
-          groupNumber: i,
-          members : [],
-        };
-        model.push(obj);
-      }
-      mvc.model.construct('groupModel', model);
-    },
-    
-    assignGroups : function(attendModel, groupSize, numberOfGroups){
-      var i, j, currentNumber, workFromFront, len = attendModel.length;
-      if(groupSize){
-        return this.assignGroups(attendModel, null, Math.ceil(len/groupSize));
-      }else if(numberOfGroups){
-        currentNumber = 1;
-        workFromFront = true;
-        i = 0;
-        j = len - 1;
-        while(i <= j){
-          if(workFromFront){
-            attendModel[i++].groupNumber = currentNumber++;
-            if(currentNumber > parseInt(numberOfGroups)){
-              currentNumber = 1;
-              workFromFront = false;
-            }
+    if(groupSize){
+      return assignGroups(scope, Math.ceil(len/groupSize));
+    }else if(numberOfGroups){
+      currentNumber = 1;
+      workFromFront = true;
+      i = 0;
+      j = len - 1;
+      while(i <= j){
+        if(workFromFront){
+          if(!scope.roster[i].groupNumber || scope.roster[i].groupNumber !== 'disabled'){
+            scope.roster[i++].groupNumber = currentNumber++;
           }else{
-            attendModel[j--].groupNumber = currentNumber++;
-            if(currentNumber > parseInt(numberOfGroups)){
-              currentNumber = 1;
-              workFromFront = true;
-            }
+            i++;
+          }
+          if(currentNumber > numberOfGroups){
+            currentNumber = 1;
+            workFromFront = false;
+          }
+        }else{
+          if(!scope.roster[j].groupNumber || scope.roster[j].groupNumber !== 'disabled'){
+            scope.roster[j--].groupNumber = currentNumber++;
+          }else{
+            j--;
+          }
+          if(currentNumber > numberOfGroups){
+            currentNumber = 1;
+            workFromFront = true;
           }
         }
       }
-    },
-
-    combineViews : function(){ 
-      attending.forEach(function(member){
-        if(!groupList['group-' + member.groupNumber]){
-          groupList['group-' + member.groupNumber] = [];
-        }
-        groupList['group-' + member.groupNumber].push(member);
-      });
-       for(var prop in groupList){
-          mvc.model.construct(prop, groupList[prop]);
-          mvc.update({
-            model: prop,
-            toView: 'rosterView',
-            component: prop
-          });
-       }
-       mvc.model.update('rosterModel', []);
-       this.updateRosterModel();
-    },
-
-    updateRosterModel : function(){
-      mvc.update({
-        model: 'rosterModel',
-        toView: 'rosterView',
-        component: 'roster'
-      });
-    },
-
-    updateGroupModel : function(){
-      mvc.update({
-        model: 'groupModel',
-        toView: 'groupsView',
-        component: 'groups'
-      });
-    },
-
-    resetRosterOnClick : function(){
-      var rosterModel = [];
-      for(var key in groupList){
-        var clone = groupList[key].slice();
-        rosterModel = rosterModel.concat(clone);
-      }
-      groupList = {};
-      rosterModel.sort(this.sortBySkill);
-      mvc.model.update('rosterModel', rosterModel);
-      mvc.model.update('groupModel', []);
-      this.removeEventListener('click', groupMaker.resetRosterOnClick);
-      this.addEventListener('click', groupMaker.createGroupsOnClick);
-      this.innerText = 'Create Groups';
-      sizeSelect.removeAttribute('disabled');
-      numberOfGroupsSelect.removeAttribute('disabled');
-      sizeSelect.value = '';
-      numberOfGroupsSelect.value = '';
-      groupMaker.updateGroupModel();
-      groupMaker.updateRosterModel();
-    },
-  
-    createGroupsOnClick : function(){
-      if(sizeSelect.value.length === 0 && numberOfGroupsSelect.value.length === 0){
-        alert('please select number of groups or the group sizes you wish to create');
-      }else{
-        groupMaker.updateGroupModel();
-        groupMaker.combineViews();
-        this.removeEventListener('click', groupMaker.createGroupsOnClick);
-        this.addEventListener('click', groupMaker.resetRosterOnClick);
-        this.innerText = 'Reset Roster';
-        sizeSelect.setAttribute('disabled', 'true');
-        numberOfGroupsSelect.setAttribute('disabled', 'true');
-      }
     }
-  };
+  }
+  function createGroups(scope){
+    var len = scope.roster.length;
+    var groupSize = parseInt(scope.groupSize);
+    var number = scope.numberOfGroups !== '' ? scope.numberOfGroups : Math.ceil(len/groupSize);
+    var updatedRoster = [];
+    var updatedGroups = {};
+    var i = 1;
+    while(i <= number){
+      updatedGroups[i++] = [];
+    } 
+    scope.roster.forEach(function(profile){
+      if(profile.groupNumber !== 'disabled'){
+        updatedGroups[profile.groupNumber].push(profile);
+      }else{
+        updatedRoster.push(profile);
+      }
+    });
+    scope.roster = updatedRoster;
+    scope.groups = updatedGroups;
+  }
 
+})();
+
+(function(){
+  angular.module('rsvp.factory', [])
+    .factory('rsvpFactory', ['$http', '$q', function($http, $q){
+      return {
+        getRsvps: function(eventId){
+
+          var memberListApiCall = "https://api.meetup.com/2/profiles?group_urlname=RiversideJS&key=53e5318"+
+                                  "6ab3be513c6e1a2d6b1e79&order=visited&desc=true&callback=JSON_CALLBACK";
+          var rsvpListApiCall =  "https://api.meetup.com/2/rsvps/?format=json&key=53e53186ab3be513c6e1a2d6b1e79&event_id="+ eventId + 
+                                 "&sign=true&callback=JSON_CALLBACK";
+          var deferred = $q.defer();
+          $http.jsonp(rsvpListApiCall).success(function(r){
+            var rsvpList = r.results;
+            var rsvpObject = rsvpList.reduce(function(obj, curr){
+              obj[curr.member.member_id] = curr.member.name;
+              return obj;
+            }, {});
+            $http.jsonp(memberListApiCall).success(function(d){
+              var memberList = d.results;
+              var attending = memberList.filter(function(obj){
+                if(rsvpObject[obj.member_id] !== undefined){
+                  obj.answers[0].answer = parseInt(obj.answers[0].answer);
+                  return true;
+                }
+              });
+              deferred.resolve(attending);
+            });
+          });
+          return deferred.promise;
+        }
+      };
+    }]);
+})();
+(function(){
+  angular.module('eventsList.factory', [])
+
+  .factory('eventsListFactory', ['$http', function($http){
+    var upcomingEvents = "https://api.meetup.com/2/events/?format=json&key=53e53186ab3be513c6e1a2d6b1e79"+
+                         "&sign=true&group_urlname=RiversideJS&status=upcoming&desc=true&callback=JSON_CALLBACK";
+    return $http.jsonp(upcomingEvents);
+  }])
+
+  .factory('pastEventsListFactory', ['$http', function($http){
+    var pastEvents = "https://api.meetup.com/2/events/?format=json&key=53e53186ab3be513c6e1a2d6b1e79&"+
+                     "sign=true&group_urlname=RiversideJS&status=past&desc=true&callback=JSON_CALLBACK";
+    return $http.jsonp(pastEvents);
+  }]);
+
+})();
+(function(){
+
+  angular.module('meetup.config', [])
+
+    .config(['$stateProvider', function($stateProvider){
+      $stateProvider.state('meetup', {
+        url: '/meetup',
+        controller: 'meetupCtrl',
+        templateUrl: '../scripts/meetup/meetup.html',
+        resolve: {
+          meetupData: ['meetupFactory', '$q', function(meetupFactory, $q){
+            var deferred = $q.defer();
+            meetupFactory
+              .success(function(result){
+                deferred.resolve(result.data);
+              })
+              .error(function(error){
+                deferred.reject(error);
+              });
+            return deferred.promise;
+          }],
+          eventData: ['eventsListFactory', 'pastEventsListFactory', '$q', function(eventsListFactory, pastEventsListFactory, $q){
+            var deferred = $q.defer();
+            eventsListFactory
+              .success(function(data){
+                if(data.results.length > 0){
+                  deferred.resolve(data.results[0]);
+                }else{
+                  pastEventsListFactory
+                    .success(function(data){
+                      deferred.resolve(data.results[0]);
+                    })
+                    .error(function(error){
+                      deferred.reject(error);
+                    });
+                }
+              })
+              .error(function(error){
+                deferred.reject(error);
+              });
+            return deferred.promise;
+          }]
+        }
+      });
+    }]);
+})();
+
+(function(){
+  angular.module('meetup.controller', [])
+
+    .controller('meetupCtrl', ['$scope', 'meetupData', 'eventData', '$state', function($scope, meetupData, eventData, $state){
+      // console.log(eventData);
+      $scope.logo = meetupData.group_photo.highres_link;
+      $scope.title = meetupData.name;
+      $scope.caption = eventData.name;
+      $state.go('meetup.event', {eventId: eventData.id} );
+    }]);
+})();
+(function(){
+  angular.module('meetup.factory', [])
+
+  .factory('meetupFactory', ['$http', function($http){
+    var groupInfoUrl = "https://api.meetup.com/riversidejs/?format=json&key=53e53186ab3be513c6e1a2d6b1e79&sign=true&callback=JSON_CALLBACK";
+    return $http.jsonp(groupInfoUrl);
+  }]);
 })();

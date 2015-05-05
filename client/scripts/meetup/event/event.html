@@ -1,0 +1,94 @@
+<div class="container-fluid">
+    <div class="col-md-4 col-sm-4 roster-box">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="panel-title">
+            <h3> Group Roster 
+            <button type="button" class="btn btn-primary pull-right" id="create" ng-click="assignGroups()">
+              {{button}}
+            </button>
+            </h3>
+          </div>
+          <div class="panel-title">
+            <div class="btn-group btn-group-sm" role="group">
+              <select id="group-size" ng-model="groupSize" ng-change="resetSelect('size')">
+                <option value="" default disabled="true" selected>Group Size</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+              </select>  
+              <select id="group-quantity" ng-model="numberOfGroups" ng-change="resetSelect()">
+                <option value="" default disabled="true" selected># of Groups</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+              </select>
+            </div>
+            <div class="btn-group btn-group-sm pull-right" role="group">
+              <button type="button" class="btn btn-default" id="experience-button" aria-label="Experience Sort" title="sort by experience" ng-click="sortBySkill()">
+                <span class="glyphicon glyphicon-sort-by-attributes-alt" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="btn btn-default" id="name-button" aria-label="Name Sort" title="sort by name" ng-click="sortByName()">
+                <span class="glyphicon glyphicon-sort-by-alphabet" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <ul class="list-group">
+            <li class="list-group-item names" ng-repeat="person in roster" title="{{person.bio || 'I did not bother writing a bio'}}" disable-member assign="assignGroups" profile="person"> 
+              <p class="text-center">
+                <img class="thumbnail-photo pull-left" ng-src="{{person.photo.thumb_link}}">
+                <a ng-href="{{person.profile_url}}" target="_blank" class="name-tag">
+                  {{person.name}}
+                </a> 
+                <span class="badge pull-right alert-info">
+                  {{person.answers[0].answer || 0}}
+                </span>
+              </p>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8 col-sm-8 group-box">
+
+
+      <div class="col-md-6" ng-repeat="(group, profiles) in groups">
+        <div class="panel panel-default">        
+          <div class="panel-heading">         
+            <div class="panel-title">
+              Group {{group}}
+            </div>
+          </div>
+          <div class="panel-body">
+            <ul class="list-group">
+              <li class="list-group-item names" ng-repeat="profile in profiles" title="{{profile.bio || 'I did not bother writing a bio'}}"> 
+                <p class="text-center">
+                  <img class="thumbnail-photo pull-left" ng-src="{{profile.photo.thumb_link}}">
+                  <a ng-href="{{profile.profile_url}}" target="_blank" class="name-tag">
+                    {{profile.name}}
+                  </a> 
+                  <span class="badge pull-right alert-info">
+                    {{profile.answers[0].answer || 0}}
+                  </span>
+                </p>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+
+      <mvc-component which="groups"></mvc-compenent>
+    </div>
+  </div>
+  
