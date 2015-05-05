@@ -222,7 +222,9 @@
           $http.jsonp(rsvpListApiCall).success(function(r){
             var rsvpList = r.results;
             var rsvpObject = rsvpList.reduce(function(obj, curr){
-              obj[curr.member.member_id] = curr.member.name;
+              if(curr.response === 'yes'){
+                obj[curr.member.member_id] = curr.member.name;  
+              }
               return obj;
             }, {});
             $http.jsonp(memberListApiCall).success(function(d){
