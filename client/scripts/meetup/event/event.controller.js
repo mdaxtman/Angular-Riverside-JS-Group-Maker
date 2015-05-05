@@ -50,7 +50,6 @@
     $scope.sortBySkill();
   }]);
 
-
   function sortByName(a, b){
     if(a.name < b.name){
       return -1;
@@ -119,6 +118,7 @@
       }
     }
   }
+
   function createGroups(scope){
     var len = scope.roster.length;
     var groupSize = parseInt(scope.groupSize);

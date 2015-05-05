@@ -5,6 +5,7 @@
       $urlRouterProvider.otherwise('/meetup');
     }]);
 })();
+
 (function(){
   angular.module('groupMakerApp', [
     'ui.router',
@@ -62,6 +63,7 @@
     });
   }]);
 })();
+
 (function(){
   angular.module('event.controller', [])
 
@@ -113,7 +115,6 @@
 
     $scope.sortBySkill();
   }]);
-
 
   function sortByName(a, b){
     if(a.name < b.name){
@@ -183,6 +184,7 @@
       }
     }
   }
+
   function createGroups(scope){
     var len = scope.roster.length;
     var groupSize = parseInt(scope.groupSize);
@@ -239,6 +241,7 @@
       };
     }]);
 })();
+
 (function(){
   angular.module('eventsList.factory', [])
 
@@ -313,6 +316,7 @@
       $state.go('meetup.event', {eventId: eventData.id} );
     }]);
 })();
+
 (function(){
   angular.module('meetup.factory', [])
 
