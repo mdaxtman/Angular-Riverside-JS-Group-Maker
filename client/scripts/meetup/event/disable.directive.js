@@ -11,7 +11,7 @@
         link: function(scope, elem){
           elem.bind('dblclick', function(e){
             if(scope.profile.groupNumber === 'disabled'){
-              scope.profile.groupNumber = 0;
+              scope.profile.groupNumber = '0';
               scope.assign(true);
             }else{
               scope.profile.groupNumber = 'disabled';

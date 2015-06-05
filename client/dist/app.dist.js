@@ -34,7 +34,7 @@
         link: function(scope, elem){
           elem.bind('dblclick', function(e){
             if(scope.profile.groupNumber === 'disabled'){
-              scope.profile.groupNumber = 0;
+              scope.profile.groupNumber = '0';
               scope.assign(true);
             }else{
               scope.profile.groupNumber = 'disabled';
@@ -91,17 +91,17 @@
     };
 
     $scope.assignGroups = function(assignOnlyDisabled){
-
       if($scope.button === 'Create Groups'){
-        if($scope.groupSize !== '' || $scope){ 
+        if($scope.groupSize !== '' || $scope.numberOfGroups !== ''){ 
           assignGroups($scope);
-          createGroups($scope);
-          $scope.button = 'Reset';
-        }else{
+          if(assignOnlyDisabled === undefined){
+            createGroups($scope);
+            $scope.button = 'Reset';  
+          }
+        }else if(!assignOnlyDisabled){
           alert('please select a group size or number of Groups');
         }
-      }else if(!assignOnlyDisabled){
-        console.log('blah');
+      }else if(assignOnlyDisabled === undefined){
         $scope.button = 'Create Groups';
         var resetRoster = [];
         for(var prop in $scope.groups){
@@ -110,6 +110,9 @@
         $scope.roster = resetRoster.concat($scope.roster);
         $scope.groups = {};
         $scope.sortBySkill();
+      }
+      if(assignOnlyDisabled === true){
+        $scope.$apply();
       }
     };
 
@@ -147,12 +150,11 @@
       len = scope.roster.length,
       groupSize,
       numberOfGroups = num || parseInt(scope.numberOfGroups);
-      
-    if(!num){
+    if(num === undefined){
       groupSize = parseInt(scope.groupSize);
     }
 
-    if(groupSize){
+    if(groupSize !== undefined){
       return assignGroups(scope, Math.ceil(len/groupSize));
     }else if(numberOfGroups){
       currentNumber = 1;
