@@ -9,7 +9,7 @@
           profile: '='
         },
         link: function(scope, elem){
-          elem.bind('dblclick', function(e){
+          elem.bind('dblclick', function(){
             if(scope.profile.groupNumber === 'disabled'){
               scope.profile.groupNumber = '0';
               scope.assign(true);
